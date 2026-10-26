@@ -3,6 +3,7 @@ import { Finding, ScanOptions, ScanResult, SEVERITY_LEVELS } from '../types/inde
 import { getCommitHistory, isGitRepo } from '../utils/git.js';
 import { scanFileContent } from './file-scanner.js';
 import { parseDiffOutput } from '../utils/git.js';
+import { IgnoreFilter, loadIgnoreFiles } from '../utils/ignore.js';
 
 export async function scanGitHistory(
   targetDir: string,
@@ -15,6 +16,7 @@ export async function scanGitHistory(
     throw new Error(`Directory '${targetDir}' is not a Git repository.`);
   }
 
+  const ignoreFilter: IgnoreFilter = loadIgnoreFiles(absoluteRoot, options.ignore || []);
   const maxCommits = options.maxHistoryCommits || 100;
   const commits = await getCommitHistory(absoluteRoot, maxCommits);
 
@@ -25,7 +27,7 @@ export async function scanGitHistory(
     const diffFiles = parseDiffOutput(commit.diff);
 
     for (const diffFile of diffFiles) {
-      if (diffFile.isDeleted) continue;
+      if (diffFile.isDeleted || ignoreFilter.isIgnored(diffFile.filePath)) continue;
 
       // Scan filename
       const fileFindings = scanFileContent({

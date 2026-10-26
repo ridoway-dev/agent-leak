@@ -1,0 +1,46 @@
+name: Agent Leak Security Scan
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  security-scan:
+    name: Agent Leak Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history for git history / diff checks
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Agent Leak
+        run: npm run build
+
+      - name: Run Agent Leak Pre-Commit / Diff Check
+        run: node ./bin/agent-leak.js diff
+
+      - name: Run Full Workspace Scan
+        run: node ./bin/agent-leak.js scan . --fail-on high
+
+      - name: Generate SARIF Security Report
+        if: always()
+        run: node ./bin/agent-leak.js scan . --sarif > results.sarif
+
+      - name: Upload SARIF report to GitHub Advanced Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: results.sarif

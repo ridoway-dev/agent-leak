@@ -1,0 +1,7 @@
+{
+  "activeSession": "sess-demo-9921",
+  "projectInstructions": "Remember to connect to internal db at 192.168.1.50 using service account.",
+  "cachedTokens": {
+    "gitlab": "glpat-DEMOFAKEGITLABTOKEN123456"
+  }
+}
