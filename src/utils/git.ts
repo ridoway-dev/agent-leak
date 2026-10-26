@@ -79,32 +79,47 @@ export function parseDiffOutput(rawDiff: string): GitDiffFile[] {
     const headerLine = lines[0]; // e.g. "a/path/to/file b/path/to/file"
     const isNew = block.includes('new file mode');
     const isDeleted = block.includes('deleted file mode');
+    const isBinary = block.includes('Binary files ') || block.includes('GIT binary patch');
 
-    // Extract target file path
-    const fileMatch = headerLine.match(/b\/(.+)$/);
-    if (!fileMatch) continue;
-    const filePath = fileMatch[1];
+    // Extract target file path (supporting spaces and Git C-style quoting)
+    let filePath = '';
+    const quotedMatch = headerLine.match(/"b\/(.+?)"\s*$/);
+    if (quotedMatch) {
+      filePath = quotedMatch[1];
+    } else {
+      const normalMatch = headerLine.match(/b\/(.+)$/);
+      if (normalMatch) {
+        filePath = normalMatch[1].replace(/^"|"$/g, '').trim();
+      }
+    }
+
+    if (!filePath) continue;
+
+    // Unescape C-style escaped characters from git if present
+    filePath = filePath.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
 
     const additions: Array<{ line: number; content: string }> = [];
     let currentLineNumber = 0;
 
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (line.startsWith('@@')) {
-        // Hunk header: @@ -old,len +new,len @@
-        const hunkMatch = line.match(/\+([0-9]+)/);
-        if (hunkMatch) {
-          currentLineNumber = parseInt(hunkMatch[1], 10);
-        }
-      } else if (line.startsWith('+') && !line.startsWith('+++')) {
-        additions.push({
-          line: currentLineNumber,
-          content: line.slice(1),
-        });
-        currentLineNumber++;
-      } else if (line.startsWith(' ') || line.startsWith('-')) {
-        if (!line.startsWith('-')) {
+    if (!isBinary) {
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.startsWith('@@')) {
+          // Hunk header: @@ -old,len +new,len @@
+          const hunkMatch = line.match(/\+([0-9]+)/);
+          if (hunkMatch) {
+            currentLineNumber = parseInt(hunkMatch[1], 10);
+          }
+        } else if (line.startsWith('+') && !line.startsWith('+++')) {
+          additions.push({
+            line: currentLineNumber,
+            content: line.slice(1),
+          });
           currentLineNumber++;
+        } else if (line.startsWith(' ') || line.startsWith('-')) {
+          if (!line.startsWith('-')) {
+            currentLineNumber++;
+          }
         }
       }
     }

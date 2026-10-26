@@ -25,6 +25,9 @@ export function renderJsonReport(result: ScanResult): string {
       commitAuthor: f.commitAuthor,
       isHistorical: f.isHistorical,
       remediation: f.remediation,
+      whyItMatters: f.whyItMatters,
+      fixGuide: f.fixGuide,
+      agentInstruction: f.agentInstruction,
     })),
     gitIgnoreAnalysis: result.gitIgnoreAnalysis,
   };

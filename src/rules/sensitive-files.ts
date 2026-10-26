@@ -8,6 +8,9 @@ export interface SensitiveFileRule {
   severity: Severity;
   pattern: RegExp;
   remediation: string;
+  whyItMatters?: string;
+  fixGuide?: string;
+  agentInstruction?: string;
 }
 
 export const SENSITIVE_FILE_RULES: SensitiveFileRule[] = [
@@ -19,6 +22,9 @@ export const SENSITIVE_FILE_RULES: SensitiveFileRule[] = [
     severity: 'CRITICAL',
     pattern: /^\.env(\.production|\.prod|\.local|\.staging)$/i,
     remediation: 'Ensure environment files are added to .gitignore and deleted from version control.',
+    whyItMatters: 'Environment files hold live production secrets, tokens, and database passwords.',
+    fixGuide: 'Add .env.* to .gitignore. Delete the committed file via git rm --cached <file>.',
+    agentInstruction: 'Add .env.* to .gitignore immediately. Never stage environment files.',
   },
   {
     id: 'file-env',
@@ -27,6 +33,9 @@ export const SENSITIVE_FILE_RULES: SensitiveFileRule[] = [
     severity: 'CRITICAL',
     pattern: /^\.env$/i,
     remediation: 'Add .env to your .gitignore. Use .env.example with placeholder values for sharing templates.',
+    whyItMatters: 'Committed .env files are the leading cause of accidental secret exposure in git repositories.',
+    fixGuide: 'Run "git rm --cached .env", append ".env" to .gitignore, and create .env.example with dummy values.',
+    agentInstruction: 'Append .env to .gitignore and remove it from git staging.',
   },
   {
     id: 'file-private-key-file',
@@ -35,6 +44,9 @@ export const SENSITIVE_FILE_RULES: SensitiveFileRule[] = [
     severity: 'CRITICAL',
     pattern: /^(id_rsa|id_ed25519|id_dsa|id_ecdsa|.*\.pem|.*\.key|.*\.p12|.*\.pfx)$/i,
     remediation: 'Never store private key files in source repositories. Remove and regenerate them.',
+    whyItMatters: 'Private keys allow unauthorized actors to decrypt secure communication or SSH into infrastructure.',
+    fixGuide: 'Remove key file from repo, regenerate the SSH or SSL keypair, and store securely in a vault.',
+    agentInstruction: 'Do not commit private key files. Remove from staging and add file pattern to .gitignore.',
   },
   {
     id: 'file-cloud-credentials',
@@ -43,6 +55,9 @@ export const SENSITIVE_FILE_RULES: SensitiveFileRule[] = [
     severity: 'CRITICAL',
     pattern: /^(service-?account.*\.json|credentials\.json|client_secrets?\.json)$/i,
     remediation: 'Remove credential JSON files from repository and manage permissions via IAM / OIDC.',
+    whyItMatters: 'GCP and AWS service account keys grant programmatic administrative access to cloud projects.',
+    fixGuide: 'Delete key in Cloud Console. Use Workload Identity Federation or short-lived tokens instead.',
+    agentInstruction: 'Do not commit credential JSON files. Use environment variables or cloud identity providers.',
   },
 
   // --- High ---

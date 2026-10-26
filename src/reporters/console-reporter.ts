@@ -18,7 +18,7 @@ function formatSeverityBadge(severity: Severity): string {
 
 export function renderConsoleReport(
   result: ScanResult,
-  options: { title?: string; isQuiet?: boolean } = {}
+  options: { title?: string; isQuiet?: boolean; explain?: boolean } = {}
 ): void {
   if (options.isQuiet) return;
 
@@ -58,6 +58,17 @@ export function renderConsoleReport(
       console.log(`             ${pc.dim('Sample:')}   ${pc.dim(f.maskedValue)}`);
       if (f.remediation) {
         console.log(`             ${pc.dim('Action:')}   ${pc.italic(f.remediation)}`);
+      }
+      if (options.explain || options.title?.includes('Audit')) {
+        if (f.whyItMatters) {
+          console.log(`             ${pc.dim('Why:')}      ${pc.yellow(f.whyItMatters)}`);
+        }
+        if (f.fixGuide) {
+          console.log(`             ${pc.dim('Fix:')}      ${pc.cyan(f.fixGuide)}`);
+        }
+        if (f.agentInstruction) {
+          console.log(`             ${pc.dim('Agent:')}    ${pc.green(f.agentInstruction)}`);
+        }
       }
       console.log('');
     }
@@ -99,6 +110,12 @@ export function renderConsoleReport(
   console.log(`  Scanned: ${result.totalFilesScanned} items in ${result.scanDurationMs}ms\n`);
 
   if (result.hasExceededThreshold) {
-    console.log(`  ${pc.bgRed(pc.white(pc.bold(' SCAN FAILED ')))} ${pc.red('Findings exceeded allowed severity threshold.')}\n`);
+    console.log(`  ${pc.bgRed(pc.white(pc.bold(' COMMIT BLOCKED / SCAN FAILED ')))} ${pc.red('Sensitive findings must be resolved.')}\n`);
+    console.log(`  ${pc.bold(pc.yellow('⚡ Safe Remediation Steps:'))}`);
+    console.log(`    1. Replace hardcoded secrets with environment variables (e.g. process.env.API_KEY)`);
+    console.log(`    2. Provide template placeholder in .env.example (e.g. API_KEY="your-key-here")`);
+    console.log(`    3. If .env or key file was created, ensure it is added to .gitignore`);
+    console.log(`    4. Re-run verification: ${pc.cyan('npx agent-leak diff --staged-only')}`);
+    console.log(`    5. Emergency bypass (use with caution): ${pc.dim('AGENT_LEAK_ALLOW=1 git commit')}\n`);
   }
 }

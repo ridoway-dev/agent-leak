@@ -11,6 +11,9 @@ export interface SecretRule {
   maskHandler?: (match: string) => string;
   validator?: (match: string, fullLine: string) => boolean;
   remediation?: string;
+  whyItMatters?: string;
+  fixGuide?: string;
+  agentInstruction?: string;
 }
 
 function extractPasswordFromConnString(url: string): string | null {
@@ -28,6 +31,9 @@ export const SECRET_RULES: SecretRule[] = [
     pattern: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY(?: BLOCK)?-----/g,
     maskHandler: (match) => maskPrivateKey(match),
     remediation: 'Never commit private keys. Remove immediately and rotate the keypair.',
+    whyItMatters: 'Anyone with repository read access can decrypt encrypted traffic or impersonate servers.',
+    fixGuide: 'Store private keys outside the repository (e.g. in secret managers or mounted volumes). Add file extension to .gitignore.',
+    agentInstruction: 'Do not embed private key strings into code. Refactor code to load the key path from process.env.KEY_PATH.',
   },
 
   // --- Database Connection Strings ---
@@ -43,6 +49,9 @@ export const SECRET_RULES: SecretRule[] = [
       return Boolean(pass && !isPlaceholder(pass));
     },
     remediation: 'Move database connection URI to environment variables and do not commit passwords.',
+    whyItMatters: 'Embedded database credentials grant full database read/write access to anyone who views this code.',
+    fixGuide: 'Use process.env.DATABASE_URL. Provide an uncredentialed placeholder in .env.example.',
+    agentInstruction: 'Replace connection string literal with process.env.DATABASE_URL and append placeholder to .env.example.',
   },
   {
     id: 'sec-conn-mysql',
@@ -56,6 +65,9 @@ export const SECRET_RULES: SecretRule[] = [
       return Boolean(pass && !isPlaceholder(pass));
     },
     remediation: 'Move database connection URI to environment variables and do not commit passwords.',
+    whyItMatters: 'Embedded database credentials expose production data and database servers to unauthorized queries.',
+    fixGuide: 'Extract URI to process.env.MYSQL_URL or process.env.DATABASE_URL.',
+    agentInstruction: 'Replace hardcoded MySQL URL with process.env.DATABASE_URL.',
   },
   {
     id: 'sec-conn-mongodb',
@@ -69,6 +81,9 @@ export const SECRET_RULES: SecretRule[] = [
       return Boolean(pass && !isPlaceholder(pass));
     },
     remediation: 'Use MongoDB secret management or environment variables without hardcoded credentials.',
+    whyItMatters: 'Database credentials allow malicious actors to dump collections or tamper with data.',
+    fixGuide: 'Set MONGODB_URI in your environment or secrets manager.',
+    agentInstruction: 'Replace MongoDB string with process.env.MONGODB_URI.',
   },
   {
     id: 'sec-conn-redis',
@@ -82,6 +97,9 @@ export const SECRET_RULES: SecretRule[] = [
       return Boolean(pass && !isPlaceholder(pass));
     },
     remediation: 'Store Redis authentication credentials in environment variables.',
+    whyItMatters: 'Unprotected Redis instances can be flushed or used for remote code execution.',
+    fixGuide: 'Move Redis URI to REDIS_URL in environment.',
+    agentInstruction: 'Load Redis connection string from process.env.REDIS_URL.',
   },
 
   // --- OpenAI / AI Providers ---
@@ -94,6 +112,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 7, 4),
     validator: (match) => !isPlaceholder(match) && match.length >= 24,
     remediation: 'Rotate this OpenAI key in the platform dashboard and load it from environment variables.',
+    whyItMatters: 'Exposed OpenAI keys are rapidly scraped by bots and cause massive unexpected billing spikes.',
+    fixGuide: '1. Revoke the key in platform.openai.com/api-keys. 2. Set OPENAI_API_KEY in .env (add .env to .gitignore). 3. Use process.env.OPENAI_API_KEY in code.',
+    agentInstruction: 'Delete the key literal immediately. Use process.env.OPENAI_API_KEY instead. Never echo the key.',
   },
   {
     id: 'sec-anthropic-key',
@@ -104,6 +125,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 7, 4),
     validator: (match) => !isPlaceholder(match) && match.length >= 25,
     remediation: 'Rotate this Anthropic API key in Anthropic Console.',
+    whyItMatters: 'Anthropic API keys grant access to Claude models and will be charged directly to your organization.',
+    fixGuide: 'Revoke key in console.anthropic.com. Pass ANTHROPIC_API_KEY via environment variables.',
+    agentInstruction: 'Replace key literal with process.env.ANTHROPIC_API_KEY.',
   },
 
   // --- GitHub Tokens ---
@@ -116,6 +140,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 4, 4),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Revoke this GitHub token under GitHub Settings -> Developer settings -> Personal access tokens.',
+    whyItMatters: 'GitHub tokens allow unauthorized access to private repositories, organization settings, and GitHub Actions workflows.',
+    fixGuide: '1. Delete the token on GitHub. 2. Create a fine-grained token with minimum permissions. 3. Pass via GITHUB_TOKEN environment variable.',
+    agentInstruction: 'Remove GitHub token literal immediately. Use process.env.GITHUB_TOKEN.',
   },
 
   // --- GitLab Tokens ---
@@ -128,6 +155,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 6, 3),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Revoke and regenerate this GitLab token in GitLab User Settings -> Access Tokens.',
+    whyItMatters: 'GitLab access tokens allow repository cloning, CI triggering, and project manipulation.',
+    fixGuide: 'Revoke in GitLab User Settings -> Access Tokens. Pass via GITLAB_TOKEN in environment.',
+    agentInstruction: 'Replace token with process.env.GITLAB_TOKEN.',
   },
 
   // --- AWS Keys ---
@@ -140,6 +170,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 4, 3),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Deactivate and delete this IAM access key in AWS IAM Console.',
+    whyItMatters: 'Leaked AWS keys are immediately exploited by automated scrapers to spin up costly compute resources.',
+    fixGuide: 'Use AWS IAM roles, AWS SSO, or pass credentials via ~/.aws/credentials instead of hardcoded strings.',
+    agentInstruction: 'Remove AWS key literal. Rely on AWS SDK default credential provider chain.',
   },
   {
     id: 'sec-aws-secret-key',
@@ -150,6 +183,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 4, 3),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Rotate this secret key in AWS IAM immediately.',
+    whyItMatters: 'Paired with an access key, this grants programmatic API access to AWS infrastructure.',
+    fixGuide: 'Remove secret key assignment. Use standard environment variables (AWS_SECRET_ACCESS_KEY).',
+    agentInstruction: 'Delete secret key from file and use standard AWS SDK environment variable resolution.',
   },
 
   // --- Google / Cloud ---
@@ -162,6 +198,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 4, 3),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Restrict or regenerate this key in Google Cloud Console -> APIs & Services -> Credentials.',
+    whyItMatters: 'Unrestricted Google API keys can incur large charges or consume your API quotas.',
+    fixGuide: 'Restrict key by HTTP referrers or IP addresses in Google Cloud Console, and store in environment.',
+    agentInstruction: 'Move key to process.env.GOOGLE_API_KEY.',
   },
 
   // --- Stripe ---
@@ -174,6 +213,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 8, 4),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Roll this Stripe API key in the Stripe Dashboard immediately.',
+    whyItMatters: 'Stripe live secret keys allow attackers to create charges, initiate refunds, or drain customer balances.',
+    fixGuide: 'Roll key in dashboard.stripe.com/apikeys. Use STRIPE_SECRET_KEY in .env.',
+    agentInstruction: 'Replace secret key with process.env.STRIPE_SECRET_KEY.',
   },
 
   // --- Slack & Discord ---
@@ -186,6 +228,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 6, 4),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Revoke this token in Slack API Developer Portal.',
+    whyItMatters: 'Slack tokens allow reading internal company chats, channels, and posting malicious messages.',
+    fixGuide: 'Revoke in api.slack.com/apps. Load SLACK_BOT_TOKEN from environment.',
+    agentInstruction: 'Replace token with process.env.SLACK_BOT_TOKEN.',
   },
   {
     id: 'sec-discord-token',
@@ -196,6 +241,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 4, 4),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Regenerate this bot token in Discord Developer Portal.',
+    whyItMatters: 'Compromised Discord bot tokens can lead to server bans, unauthorized administration, or phishing.',
+    fixGuide: 'Regenerate token in discord.com/developers/applications. Store in DISCORD_TOKEN.',
+    agentInstruction: 'Replace token with process.env.DISCORD_TOKEN.',
   },
 
   // --- JWT ---
@@ -208,6 +256,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 6, 4),
     validator: (match) => !isPlaceholder(match) && match.split('.').length === 3,
     remediation: 'Ensure tokens are passed dynamically via auth flows, not hardcoded.',
+    whyItMatters: 'Hardcoded JWTs may allow impersonation of users or elevated privileges until expiration.',
+    fixGuide: 'Generate JWTs dynamically or receive them through authentication handshakes.',
+    agentInstruction: 'Remove static JWT literal.',
   },
 
   // --- Generic Bearer Token ---
@@ -220,6 +271,9 @@ export const SECRET_RULES: SecretRule[] = [
     maskHandler: (match) => maskSecret(match, 4, 4),
     validator: (match) => !isPlaceholder(match),
     remediation: 'Avoid hardcoding Authorization bearer headers.',
+    whyItMatters: 'Bearer tokens allow any client possessing them to access protected API endpoints.',
+    fixGuide: 'Pass tokens dynamically via request headers from environment variables.',
+    agentInstruction: 'Replace hardcoded bearer token with headers: { Authorization: `Bearer ${token}` }.',
   },
 
   // --- Generic High Entropy Key / Password Assignment ---
@@ -238,5 +292,8 @@ export const SECRET_RULES: SecretRule[] = [
       return isHighEntropy(val, 3.6);
     },
     remediation: 'Move sensitive secrets to environment variables or secret store.',
+    whyItMatters: 'Hardcoded secrets get saved in Git commits and can be extracted from public source code.',
+    fixGuide: 'Move secret to environment variables or .env file, and reference via process.env.',
+    agentInstruction: 'Replace hardcoded credential with process.env reference.',
   },
 ];

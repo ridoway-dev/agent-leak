@@ -130,7 +130,24 @@ agent-leak history
 
 If historical exposures are discovered, Agent Leak marks them as `HISTORICAL` and explains that simply removing the secret in the latest commit is insufficient: **credential rotation is required**.
 
-### 4. Git Pre-Commit Hook
+### 4. Remediation Verification
+
+After refactoring code to use environment variables, run instant verification:
+
+```bash
+agent-leak verify
+```
+
+Output:
+
+```text
+⚡ AGENT LEAK — Remediation Verified
+
+  ✓ All checks passed! No sensitive tokens or unprotected files detected.
+  Changes are clean and ready to commit.
+```
+
+### 5. Git Pre-Commit Hook
 
 Install an automated pre-commit hook in `.git/hooks/pre-commit`:
 
@@ -153,6 +170,21 @@ To remove the hook:
 ```bash
 agent-leak uninstall-hook
 ```
+
+---
+
+## Feature Comparison
+
+| Capability | Gitleaks / Trufflehog | detect-secrets | Agent Leak |
+| :--- | :--- | :--- | :--- |
+| **Primary Workflow** | Post-push CI security gate | Static linter plugin | Pre-commit AI-assisted developer guard |
+| **Agent Artifact Awareness** | ❌ Ignores `.claude/`, memory dumps | ❌ None | ✅ Detects agent prompt dumps, transcripts, logs |
+| **Remediation Engine** | ⚠️ Generic error message | ⚠️ Baseline alert | ✅ What, Why it matters, Fix guide, Agent instructions |
+| **Verification Command** | ❌ Re-run full scanner | ❌ Baseline update | ✅ Dedicated `agent-leak verify` command |
+| **Secret Redaction** | ⚠️ Often outputs raw or partial secret | ⚠️ Raw secret in plugins | ✅ 100% masked (zero secrets in terminal/JSON/SARIF) |
+| **AI Agent Skill** | ❌ None | ❌ None | ✅ Built-in skill for Claude Code, Cursor, Codex |
+| **Privacy & Telemetry** | Cloud optional / SaaS tracking | Python / Local | 100% local-first, zero telemetry, zero API keys |
+
 
 ---
 
@@ -218,6 +250,10 @@ Agent Leak also automatically recognizes placeholder strings (e.g. `YOUR_API_KEY
 ## Output Modes
 
 - **Default**: Pretty human-readable terminal output with file links and masked samples.
+- **Explain**: Detailed threat model explanation and step-by-step remediation guide for every finding:
+  ```bash
+  agent-leak scan . --explain
+  ```
 - **JSON**: Machine-readable output for programmatic agent consumption:
   ```bash
   agent-leak scan . --json
@@ -331,6 +367,14 @@ Agent Leak is ready.
   - Custom team policy files
 - **v0.4**:
   - Editor extensions & native IDE status indicators
+
+---
+ 
+## Documentation & Resources
+
+- [**Architecture & Internals**](docs/ARCHITECTURE.md): Deep dive into the regex heuristics, Shannon entropy model, and AST/diff parsing.
+- [**Interactive Walkthrough**](demo/WALKTHROUGH.md): Step-by-step reproducible guide with the built-in vulnerable demo project.
+- [**Launch Plan & Differentiation**](docs/LAUNCH_PLAN.md): Target audience analysis, community guidelines, and verified feature comparison.
 
 ---
 

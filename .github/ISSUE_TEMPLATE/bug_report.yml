@@ -1,0 +1,35 @@
+name: Bug Report
+description: Report a bug, crash, or unexpected behavior in Agent Leak.
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Agent Leak!
+        **IMPORTANT: NEVER paste real secrets, live API keys, or private tokens in issues.**
+  - type: input
+    id: version
+    attributes:
+      label: Agent Leak Version
+      description: What version of agent-leak are you running? (Run `npx agent-leak --version`)
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Minimal commands or code snippet to reproduce (use obviously fake dummy values).
+      placeholder: |
+        1. Run `agent-leak diff` on...
+        2. Expected output...
+        3. Actual output...
+    validations:
+      required: true

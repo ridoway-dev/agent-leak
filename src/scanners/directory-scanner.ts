@@ -1,4 +1,4 @@
-import { readdirSync, statSync, readFileSync } from 'node:fs';
+import { readdirSync, statSync, readFileSync, existsSync } from 'node:fs';
 import { resolve, relative, extname } from 'node:path';
 import { Finding, ScanOptions, ScanResult, Severity, SEVERITY_LEVELS } from '../types/index.js';
 import { IgnoreFilter, loadIgnoreFiles } from '../utils/ignore.js';
@@ -27,6 +27,10 @@ function isBinaryFile(filePath: string, buffer?: Buffer): boolean {
 export function scanDirectory(targetPath: string, options: ScanOptions = {}): ScanResult {
   const startTime = Date.now();
   const absoluteRoot = resolve(targetPath);
+
+  if (!existsSync(absoluteRoot)) {
+    throw new Error(`Target path '${targetPath}' does not exist.`);
+  }
   const ignoreFilter: IgnoreFilter = loadIgnoreFiles(absoluteRoot, options.ignore || []);
   const maxBytes = 5 * 1024 * 1024; // 5 MB max per file
 

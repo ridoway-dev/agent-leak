@@ -1,0 +1,32 @@
+name: New Detection Rule Request
+description: Request a new credential pattern, provider token rule, or sensitive file detection.
+labels: ['enhancement', 'rule']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us expand Agent Leak's detection capabilities!
+        **DO NOT paste real API keys. Use dummy characters (e.g. `sk_live_12345...`).**
+  - type: input
+    id: provider
+    attributes:
+      label: Service or Provider Name
+      description: e.g. HuggingFace, Cohere, Pinecone, Resend, Supabase
+      placeholder: Resend API Key
+    validations:
+      required: true
+  - type: input
+    id: format
+    attributes:
+      label: Token Format / Prefix
+      description: Known prefix, character length, or structure (e.g. `re_[a-zA-Z0-9]{32}`)
+      placeholder: re_...
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Provider Documentation Link
+      description: Link to official provider docs detailing key format and revocation steps.
+    validations:
+      required: false

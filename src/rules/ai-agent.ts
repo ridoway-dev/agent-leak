@@ -7,6 +7,9 @@ export interface AIAgentCheck {
   severity: Severity;
   check: (filePath: string, content?: string) => boolean;
   remediation: string;
+  whyItMatters?: string;
+  fixGuide?: string;
+  agentInstruction?: string;
 }
 
 export const AI_AGENT_DIRS = ['.claude', '.cursor', '.codex', '.continue', '.cline', '.roo'];
@@ -59,6 +62,9 @@ export const AI_AGENT_CHECKS: AIAgentCheck[] = [
       return false;
     },
     remediation: 'Ensure agent context and session histories are excluded from git commits and public repositories.',
+    whyItMatters: 'Agent memory dumps store recent prompts, copied terminal logs, and system environment variables that often contain secrets.',
+    fixGuide: 'Add agent directories (.claude/, .cursor/, .codex/) to .gitignore or .agent-leakignore.',
+    agentInstruction: 'Add your session storage directory to .gitignore. Do not track session JSON or transcript files.',
   },
   {
     id: 'agent-debug-log',
@@ -75,6 +81,9 @@ export const AI_AGENT_CHECKS: AIAgentCheck[] = [
       );
     },
     remediation: 'Agent run logs often record API responses with live tokens. Add *.log to .gitignore.',
+    whyItMatters: 'Verbose command executions log full authorization headers and API keys from CLI commands.',
+    fixGuide: 'Add *.log and debug logs to .gitignore.',
+    agentInstruction: 'Ensure log output files are ignored by git.',
   },
   {
     id: 'agent-prompt-dump',
@@ -90,5 +99,8 @@ export const AI_AGENT_CHECKS: AIAgentCheck[] = [
       );
     },
     remediation: 'Do not commit prompt histories or chat transcripts that might contain credentials.',
+    whyItMatters: 'Prompt histories record pasted secrets, auth tokens, and internal proprietary prompts.',
+    fixGuide: 'Exclude conversation transcripts and prompt records from repository commits.',
+    agentInstruction: 'Do not stage prompt dumps or transcript logs.',
   },
 ];

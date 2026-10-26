@@ -33,6 +33,9 @@ export function scanFileContent(input: FileScanInput): Finding[] {
       maskedValue: filePath,
       fingerprint: computeFingerprint(sensitiveFile.id, filePath),
       remediation: sensitiveFile.remediation,
+      whyItMatters: sensitiveFile.whyItMatters,
+      fixGuide: sensitiveFile.fixGuide,
+      agentInstruction: sensitiveFile.agentInstruction,
     });
   }
 
@@ -49,6 +52,9 @@ export function scanFileContent(input: FileScanInput): Finding[] {
         maskedValue: filePath,
         fingerprint: computeFingerprint(agentCheck.id, filePath),
         remediation: agentCheck.remediation,
+        whyItMatters: agentCheck.whyItMatters,
+        fixGuide: agentCheck.fixGuide,
+        agentInstruction: agentCheck.agentInstruction,
       });
       break;
     }
@@ -100,6 +106,9 @@ export function scanFileContent(input: FileScanInput): Finding[] {
           maskedValue: masked,
           fingerprint: computeFingerprint(rule.id, filePath, lineNum),
           remediation: rule.remediation,
+          whyItMatters: rule.whyItMatters,
+          fixGuide: rule.fixGuide,
+          agentInstruction: rule.agentInstruction,
         });
 
         // Avoid infinite loop on zero-width match

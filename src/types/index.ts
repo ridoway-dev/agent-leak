@@ -34,6 +34,9 @@ export interface Finding {
   commitDate?: string;
   isHistorical?: boolean;
   remediation?: string;
+  whyItMatters?: string;
+  fixGuide?: string;
+  agentInstruction?: string;
 }
 
 export interface GitIgnoreAnalysis {
@@ -78,6 +81,7 @@ export interface ScanOptions {
   sarif?: boolean;
   quiet?: boolean;
   verbose?: boolean;
+  explain?: boolean;
   ignore?: string[];
   includePii?: boolean;
   configPath?: string;

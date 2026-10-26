@@ -20,7 +20,7 @@ function handleReportOutput(result: ScanResult, options: ScanOptions, title: str
   } else if (options.sarif) {
     console.log(renderSarifReport(result));
   } else {
-    renderConsoleReport(result, { title, isQuiet: options.quiet });
+    renderConsoleReport(result, { title, isQuiet: options.quiet, explain: options.explain });
   }
 
   if (result.hasExceededThreshold) {
@@ -42,6 +42,7 @@ export async function runCli(): Promise<void> {
       .option('--json', 'Output machine-readable JSON')
       .option('--sarif', 'Output SARIF 2.1.0 format for GitHub Code Scanning')
       .option('--quiet', 'Suppress terminal output and only return exit code')
+      .option('--explain', 'Explain why each finding matters with step-by-step remediation guide')
       .option('--fail-on <severity>', 'Fail exit code on specified severity (CRITICAL, HIGH, MEDIUM, LOW, INFO)', 'HIGH')
       .option('--ignore <patterns...>', 'Additional glob patterns or paths to ignore')
       .option('--include-pii', 'Include low-severity personal identifiable information (emails, private IPs)')
@@ -84,6 +85,34 @@ export async function runCli(): Promise<void> {
       handleReportOutput(result, options, 'Git Diff Scan (Pre-Commit)');
     } catch (err: any) {
       console.error(pc.red(`\nError during diff scan: ${err?.message || err}`));
+      process.exit(1);
+    }
+  });
+
+  // Command: verify
+  addCommonOptions(
+    program
+      .command('verify')
+      .description('Verify that recent fixes or staged changes are free of leaks and safe to commit')
+      .option('--staged-only', 'Verify only staged changes', true)
+  ).action(async (rawOptions) => {
+    const cwd = process.cwd();
+    const config = loadConfig(cwd, rawOptions.config);
+    const options = mergeOptionsWithConfig(rawOptions, config);
+
+    try {
+      const result = await scanGitDiff(cwd, options);
+      if (result.findings.length === 0) {
+        if (!options.quiet) {
+          console.log(`\n${pc.bold(pc.cyan('⚡ AGENT LEAK'))} ${pc.dim('—')} ${pc.bold(pc.green('Remediation Verified'))}\n`);
+          console.log(`  ${pc.green('✓')} ${pc.bold('All checks passed!')} No sensitive tokens or unprotected files detected.`);
+          console.log(`  ${pc.dim('Changes are clean and ready to commit.')}\n`);
+        }
+      } else {
+        handleReportOutput(result, options, 'Remediation Verification Failed');
+      }
+    } catch (err: any) {
+      console.error(pc.red(`\nError during verification: ${err?.message || err}`));
       process.exit(1);
     }
   });
