@@ -64,8 +64,13 @@ describe('Security Non-Leak Guarantee (Section 30)', () => {
     expect(sarif).not.toContain(FAKE_RAW_SECRET);
   });
 
-  it('guarantees Console reporter NEVER outputs raw secrets', () => {
-    const code = `const key = "${FAKE_RAW_SECRET}";`;
+  it('guarantees Console reporter NEVER outputs raw secrets even with explain enabled', () => {
+    const fakeOpenAI = ['sk', 'proj', 'DEMOFAKEOPENAIKEY99887766554433221100'].join('-');
+    const fakeStripe = ['sk', 'live', '51DEMOFAKESTRIPEKEY9988776655443322'].join('_');
+    const code = `
+      const openai = "${fakeOpenAI}";
+      const stripe = "${fakeStripe}";
+    `;
     const findings = scanFileContent({ filePath: 'src/config.ts', content: code });
 
     const mockResult: ScanResult = {
@@ -73,7 +78,7 @@ describe('Security Non-Leak Guarantee (Section 30)', () => {
       findings,
       totalFilesScanned: 1,
       scanDurationMs: 12,
-      summary: { critical: 1, high: 0, medium: 0, low: 0, info: 0, total: 1 },
+      summary: { critical: 2, high: 0, medium: 0, low: 0, info: 0, total: 2 },
       hasExceededThreshold: true,
     };
 
@@ -82,9 +87,12 @@ describe('Security Non-Leak Guarantee (Section 30)', () => {
     console.log = (...args: any[]) => logs.push(args.join(' '));
 
     try {
-      renderConsoleReport(mockResult);
+      renderConsoleReport(mockResult, { explain: true });
       const combined = logs.join('\n');
-      expect(combined).not.toContain(FAKE_RAW_SECRET);
+      expect(combined).not.toContain(fakeOpenAI);
+      expect(combined).not.toContain(fakeStripe);
+      expect(combined).toContain('sk-proj');
+      expect(combined).toContain('sk_live_');
     } finally {
       console.log = originalLog;
     }
