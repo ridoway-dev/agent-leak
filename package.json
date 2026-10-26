@@ -1,5 +1,5 @@
 {
-  "name": "@ridoway-dev/agent-leak",
+  "name": "agent-leak-cli",
   "version": "0.1.0",
   "description": "Security scanner for AI-assisted coding. Find what your AI coding agent could accidentally leak before it leaves your machine.",
   "keywords": [
@@ -27,7 +27,8 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "agent-leak": "bin/agent-leak.js"
+    "agent-leak": "bin/agent-leak.js",
+    "agent-leak-cli": "bin/agent-leak.js"
   },
   "files": [
     "dist",
