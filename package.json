@@ -15,6 +15,14 @@
   ],
   "author": "Agent Leak Contributors",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ridoway-dev/agent-leak.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ridoway-dev/agent-leak/issues"
+  },
+  "homepage": "https://github.com/ridoway-dev/agent-leak#readme",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
