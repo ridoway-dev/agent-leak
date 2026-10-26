@@ -63,7 +63,7 @@ export function renderSarifReport(result: ScanResult): string {
           driver: {
             name: 'agent-leak',
             version: '0.1.0',
-            informationUri: 'https://github.com/agent-leak/agent-leak',
+            informationUri: 'https://github.com/ridoway-dev/agent-leak',
             rules: Array.from(rulesMap.values()),
           },
         },
