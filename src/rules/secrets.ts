@@ -14,6 +14,7 @@ export interface SecretRule {
   whyItMatters?: string;
   fixGuide?: string;
   agentInstruction?: string;
+  rotationUrl?: string;
 }
 
 function extractPasswordFromConnString(url: string): string | null {
@@ -115,6 +116,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'Exposed OpenAI keys are rapidly scraped by bots and cause massive unexpected billing spikes.',
     fixGuide: '1. Revoke the key in platform.openai.com/api-keys. 2. Set OPENAI_API_KEY in .env (add .env to .gitignore). 3. Use process.env.OPENAI_API_KEY in code.',
     agentInstruction: 'Delete the key literal immediately. Use process.env.OPENAI_API_KEY instead. Never echo the key.',
+    rotationUrl: 'https://platform.openai.com/api-keys',
   },
   {
     id: 'sec-anthropic-key',
@@ -128,6 +130,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'Anthropic API keys grant access to Claude models and will be charged directly to your organization.',
     fixGuide: 'Revoke key in console.anthropic.com. Pass ANTHROPIC_API_KEY via environment variables.',
     agentInstruction: 'Replace key literal with process.env.ANTHROPIC_API_KEY.',
+    rotationUrl: 'https://console.anthropic.com/settings/keys',
   },
 
   // --- GitHub Tokens ---
@@ -143,6 +146,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'GitHub tokens allow unauthorized access to private repositories, organization settings, and GitHub Actions workflows.',
     fixGuide: '1. Delete the token on GitHub. 2. Create a fine-grained token with minimum permissions. 3. Pass via GITHUB_TOKEN environment variable.',
     agentInstruction: 'Remove GitHub token literal immediately. Use process.env.GITHUB_TOKEN.',
+    rotationUrl: 'https://github.com/settings/tokens',
   },
 
   // --- GitLab Tokens ---
@@ -158,6 +162,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'GitLab access tokens allow repository cloning, CI triggering, and project manipulation.',
     fixGuide: 'Revoke in GitLab User Settings -> Access Tokens. Pass via GITLAB_TOKEN in environment.',
     agentInstruction: 'Replace token with process.env.GITLAB_TOKEN.',
+    rotationUrl: 'https://gitlab.com/-/user_settings/personal_access_tokens',
   },
 
   // --- AWS Keys ---
@@ -173,6 +178,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'Leaked AWS keys are immediately exploited by automated scrapers to spin up costly compute resources.',
     fixGuide: 'Use AWS IAM roles, AWS SSO, or pass credentials via ~/.aws/credentials instead of hardcoded strings.',
     agentInstruction: 'Remove AWS key literal. Rely on AWS SDK default credential provider chain.',
+    rotationUrl: 'https://console.aws.amazon.com/iam/',
   },
   {
     id: 'sec-aws-secret-key',
@@ -186,6 +192,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'Paired with an access key, this grants programmatic API access to AWS infrastructure.',
     fixGuide: 'Remove secret key assignment. Use standard environment variables (AWS_SECRET_ACCESS_KEY).',
     agentInstruction: 'Delete secret key from file and use standard AWS SDK environment variable resolution.',
+    rotationUrl: 'https://console.aws.amazon.com/iam/',
   },
 
   // --- Google / Cloud ---
@@ -201,6 +208,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'Unrestricted Google API keys can incur large charges or consume your API quotas.',
     fixGuide: 'Restrict key by HTTP referrers or IP addresses in Google Cloud Console, and store in environment.',
     agentInstruction: 'Move key to process.env.GOOGLE_API_KEY.',
+    rotationUrl: 'https://console.cloud.google.com/apis/credentials',
   },
 
   // --- Stripe ---
@@ -216,6 +224,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'Stripe live secret keys allow attackers to create charges, initiate refunds, or drain customer balances.',
     fixGuide: 'Roll key in dashboard.stripe.com/apikeys. Use STRIPE_SECRET_KEY in .env.',
     agentInstruction: 'Replace secret key with process.env.STRIPE_SECRET_KEY.',
+    rotationUrl: 'https://dashboard.stripe.com/apikeys',
   },
 
   // --- Slack & Discord ---
@@ -231,6 +240,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'Slack tokens allow reading internal company chats, channels, and posting malicious messages.',
     fixGuide: 'Revoke in api.slack.com/apps. Load SLACK_BOT_TOKEN from environment.',
     agentInstruction: 'Replace token with process.env.SLACK_BOT_TOKEN.',
+    rotationUrl: 'https://api.slack.com/apps',
   },
   {
     id: 'sec-discord-token',
@@ -244,6 +254,7 @@ export const SECRET_RULES: SecretRule[] = [
     whyItMatters: 'Compromised Discord bot tokens can lead to server bans, unauthorized administration, or phishing.',
     fixGuide: 'Regenerate token in discord.com/developers/applications. Store in DISCORD_TOKEN.',
     agentInstruction: 'Replace token with process.env.DISCORD_TOKEN.',
+    rotationUrl: 'https://discord.com/developers/applications',
   },
 
   // --- JWT ---

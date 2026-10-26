@@ -12,6 +12,7 @@ import { renderSarifReport } from '../reporters/sarif-reporter.js';
 import { loadConfig, mergeOptionsWithConfig, DEFAULT_CONFIG } from '../config/index.js';
 import { installHook, uninstallHook } from '../hooks/git-hook.js';
 import { isGitRepo, getGitRoot } from '../utils/git.js';
+import { runGuidedFix } from './fix.js';
 import { ScanOptions, ScanResult, Severity } from '../types/index.js';
 
 function handleReportOutput(result: ScanResult, options: ScanOptions, title: string): void {
@@ -77,6 +78,12 @@ export async function runCli(): Promise<void> {
       .option('--staged-only', 'Scan only staged changes (--cached)')
   ).action(async (rawOptions) => {
     const cwd = process.cwd();
+    if (!isGitRepo(cwd)) {
+      console.log(pc.yellow(`\nNotice: "agent-leak diff" requires a Git repository to inspect diffs.`));
+      console.log(`To scan any folder or files without Git, run: ${pc.cyan('npx agent-leak scan .')}\n`);
+      process.exit(1);
+    }
+
     const config = loadConfig(cwd, rawOptions.config);
     const options = mergeOptionsWithConfig(rawOptions, config);
 
@@ -89,6 +96,29 @@ export async function runCli(): Promise<void> {
     }
   });
 
+  // Command: fix
+  program
+    .command('fix [path]')
+    .description('Interactive guided fix assistant to safely inspect, remediate, and verify findings')
+    .option('--staged-only', 'Focus on staged Git changes only')
+    .option('--non-interactive', 'Display fix guides and rotation steps without interactive prompts (for CI/scripts)')
+    .option('--config <path>', 'Custom path to configuration file')
+    .action(async (targetPath = '.', rawOptions) => {
+      const cwd = process.cwd();
+      const config = loadConfig(cwd, rawOptions.config);
+      const options = mergeOptionsWithConfig(rawOptions, config);
+      if (rawOptions.nonInteractive) {
+        options.nonInteractive = true;
+      }
+
+      try {
+        await runGuidedFix(targetPath, options);
+      } catch (err: any) {
+        console.error(pc.red(`\nError during guided fix: ${err?.message || err}`));
+        process.exit(1);
+      }
+    });
+
   // Command: verify
   addCommonOptions(
     program
@@ -97,6 +127,12 @@ export async function runCli(): Promise<void> {
       .option('--staged-only', 'Verify only staged changes', true)
   ).action(async (rawOptions) => {
     const cwd = process.cwd();
+    if (!isGitRepo(cwd)) {
+      console.log(pc.yellow(`\nNotice: "agent-leak verify" checks Git staged changes by default.`));
+      console.log(`To scan a directory or file without Git, run: ${pc.cyan('npx agent-leak scan <path>')}\n`);
+      process.exit(1);
+    }
+
     const config = loadConfig(cwd, rawOptions.config);
     const options = mergeOptionsWithConfig(rawOptions, config);
 
@@ -125,6 +161,12 @@ export async function runCli(): Promise<void> {
       .option('--max-commits <n>', 'Maximum number of commits to scan', '100')
   ).action(async (rawOptions) => {
     const cwd = process.cwd();
+    if (!isGitRepo(cwd)) {
+      console.log(pc.yellow(`\nNotice: "agent-leak history" requires a Git repository to inspect past commits.`));
+      console.log(`To scan current files without Git, run: ${pc.cyan('npx agent-leak scan .')}\n`);
+      process.exit(1);
+    }
+
     const config = loadConfig(cwd, rawOptions.config);
     const options = mergeOptionsWithConfig(rawOptions, config);
     if (rawOptions.maxCommits) {
@@ -165,7 +207,13 @@ export async function runCli(): Promise<void> {
     .command('install-hook')
     .description('Install Git pre-commit hook to automatically block commits containing leaks')
     .action(() => {
-      const res = installHook(process.cwd());
+      const cwd = process.cwd();
+      if (!isGitRepo(cwd)) {
+        console.log(pc.yellow(`\nNotice: Cannot install Git pre-commit hook outside of a Git repository.`));
+        console.log(`Initialize Git with ${pc.cyan('git init')} first or navigate to your Git repository root.\n`);
+        process.exit(1);
+      }
+      const res = installHook(cwd);
       if (res.success) {
         console.log(pc.green(`\n✓ ${res.message}\n`));
       } else {
@@ -179,7 +227,12 @@ export async function runCli(): Promise<void> {
     .command('uninstall-hook')
     .description('Uninstall the Agent Leak pre-commit hook')
     .action(() => {
-      const res = uninstallHook(process.cwd());
+      const cwd = process.cwd();
+      if (!isGitRepo(cwd)) {
+        console.log(pc.yellow(`\nNotice: Cannot uninstall Git pre-commit hook outside of a Git repository.\n`));
+        process.exit(1);
+      }
+      const res = uninstallHook(cwd);
       if (res.success) {
         console.log(pc.green(`\n✓ ${res.message}\n`));
       } else {
@@ -308,8 +361,15 @@ demo/**
       console.log(`\n${pc.green(pc.bold('Agent Leak is ready.'))}\n`);
     });
 
-  // Default: if no arguments passed, display help
+  // Default: if no arguments passed, display beginner-friendly guide + help
   if (process.argv.length <= 2) {
+    console.log(`\n${pc.bold(pc.cyan('⚡ AGENT LEAK'))} ${pc.dim('—')} ${pc.bold('Developer Security Scanner for AI-Assisted Coding')}`);
+    console.log(`  Find what your AI coding agent could accidentally leak before it leaves your machine.\n`);
+    console.log(`  ${pc.bold('Beginner Quick Start:')}`);
+    console.log(`    ${pc.cyan('npx agent-leak scan .')}       Scan your entire project folder for leaked credentials`);
+    console.log(`    ${pc.cyan('npx agent-leak diff')}         Check what sensitive files or tokens are about to be committed`);
+    console.log(`    ${pc.cyan('npx agent-leak fix')}          Interactive assistant: step-by-step guidance on how to fix findings`);
+    console.log(`    ${pc.cyan('npx agent-leak verify')}       Verify that recent fixes or staged changes are clean\n`);
     program.outputHelp();
     return;
   }

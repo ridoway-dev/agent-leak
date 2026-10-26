@@ -109,6 +109,7 @@ export function scanFileContent(input: FileScanInput): Finding[] {
           whyItMatters: rule.whyItMatters,
           fixGuide: rule.fixGuide,
           agentInstruction: rule.agentInstruction,
+          rotationUrl: rule.rotationUrl,
         });
 
         // Avoid infinite loop on zero-width match
@@ -152,5 +153,18 @@ export function scanFileContent(input: FileScanInput): Finding[] {
     }
   }
 
-  return findings;
+  // Deduplicate overlapping findings on the exact same line:
+  // If a specific provider rule exists on line N, discard sec-generic-secret on line N to prevent noisy output.
+  const specificLines = new Set(
+    findings
+      .filter((f) => f.line !== undefined && f.id !== 'sec-generic-secret' && f.type === 'secret')
+      .map((f) => f.line)
+  );
+
+  return findings.filter((f) => {
+    if (f.id === 'sec-generic-secret' && f.line !== undefined && specificLines.has(f.line)) {
+      return false;
+    }
+    return true;
+  });
 }

@@ -28,17 +28,40 @@ export function renderConsoleReport(
   if (result.findings.length === 0) {
     console.log(
       `  ${pc.green('✓')} ${pc.bold('No sensitive leaks detected!')} ${pc.dim(
-        `(${result.totalFilesScanned} files scanned in ${result.scanDurationMs}ms)`
-      )}\n`
+        `(${result.totalFilesScanned} items scanned in ${result.scanDurationMs}ms)`
+      )}`
+    );
+    console.log(
+      `  ${pc.dim('Checked:')} ${pc.dim('API keys, connection strings, private keys, .env files, and AI agent session dumps.')}`
+    );
+    console.log(
+      `  ${pc.dim('Tip:')}     ${pc.dim('Always verify that .env and private key files are listed in your .gitignore.')}\n`
     );
     return;
   }
 
+  // Sort findings by severity (CRITICAL first)
+  const severityRank: Record<Severity, number> = {
+    CRITICAL: 5,
+    HIGH: 4,
+    MEDIUM: 3,
+    LOW: 2,
+    INFO: 1,
+  };
+
+  const sortedFindings = [...result.findings].sort(
+    (a, b) => severityRank[b.severity] - severityRank[a.severity]
+  );
+
   // Group findings by file
   const grouped = new Map<string, Finding[]>();
-  for (const f of result.findings) {
+  for (const f of sortedFindings) {
     const list = grouped.get(f.file) || [];
-    list.push(f);
+    // Skip exact duplicate findings on the same file, line, and rule
+    const isDup = list.some((existing) => existing.id === f.id && existing.line === f.line);
+    if (!isDup) {
+      list.push(f);
+    }
     grouped.set(f.file, list);
   }
 
@@ -53,22 +76,23 @@ export function renderConsoleReport(
       console.log(`    ${badge} ${histTag}${pc.bold(f.ruleName)}`);
       console.log(`             ${pc.dim('Location:')} ${file}${loc}`);
       if (f.commitHash) {
-        console.log(`             ${pc.dim('Commit:')}   ${pc.yellow(f.commitHash)} ${pc.dim(`by ${f.commitAuthor || 'unknown'}`)}`);
+        console.log(`             ${pc.dim('Commit:')}   ${pc.yellow(f.commitHash)} ${pc.dim(`by ${f.commitAuthor || 'unknown'}`)} ${pc.red('(Rotation required!)')}`);
       }
       console.log(`             ${pc.dim('Sample:')}   ${pc.dim(f.maskedValue)}`);
+      if (f.whyItMatters) {
+        console.log(`             ${pc.dim('Risk:')}     ${pc.yellow(f.whyItMatters)}`);
+      }
       if (f.remediation) {
         console.log(`             ${pc.dim('Action:')}   ${pc.italic(f.remediation)}`);
       }
-      if (options.explain || options.title?.includes('Audit')) {
-        if (f.whyItMatters) {
-          console.log(`             ${pc.dim('Why:')}      ${pc.yellow(f.whyItMatters)}`);
-        }
-        if (f.fixGuide) {
-          console.log(`             ${pc.dim('Fix:')}      ${pc.cyan(f.fixGuide)}`);
-        }
-        if (f.agentInstruction) {
-          console.log(`             ${pc.dim('Agent:')}    ${pc.green(f.agentInstruction)}`);
-        }
+      if (f.fixGuide && (options.explain || options.title?.includes('Audit') || f.severity === 'CRITICAL')) {
+        console.log(`             ${pc.dim('How to fix:')} ${pc.cyan(f.fixGuide)}`);
+      }
+      if (f.rotationUrl) {
+        console.log(`             ${pc.dim('Rotate at:')}   ${pc.blue(pc.underline(f.rotationUrl))}`);
+      }
+      if (options.explain && f.agentInstruction) {
+        console.log(`             ${pc.dim('Agent instruction:')} ${pc.green(f.agentInstruction)}`);
       }
       console.log('');
     }
@@ -76,19 +100,19 @@ export function renderConsoleReport(
 
   // Render GitIgnore analysis if present
   if (result.gitIgnoreAnalysis && result.gitIgnoreAnalysis.length > 0) {
-    console.log(`  ${pc.bold('.gitignore analysis')}`);
+    console.log(`  ${pc.bold('.gitignore Analysis')}`);
     const unignored = result.gitIgnoreAnalysis.filter((a) => !a.isIgnored);
 
     for (const a of result.gitIgnoreAnalysis) {
       if (a.isIgnored) {
-        console.log(`    ${pc.green('✓')} ${a.file.padEnd(25)} ${pc.dim('ignored')}`);
+        console.log(`    ${pc.green('✓')} ${a.file.padEnd(25)} ${pc.dim('properly ignored by git')}`);
       } else {
-        console.log(`    ${pc.red('✗')} ${pc.bold(a.file.padEnd(25))} ${pc.red('NOT ignored')}`);
+        console.log(`    ${pc.red('✗')} ${pc.bold(a.file.padEnd(25))} ${pc.red('NOT ignored (at risk of git commit)')}`);
       }
     }
 
     if (unignored.length > 0) {
-      console.log(`\n  ${pc.yellow(pc.bold('Recommended additions to .gitignore:'))}`);
+      console.log(`\n  ${pc.yellow(pc.bold('Recommended additions to your .gitignore:'))}`);
       for (const u of unignored) {
         console.log(`    ${pc.cyan(u.file)}`);
       }
@@ -111,11 +135,11 @@ export function renderConsoleReport(
 
   if (result.hasExceededThreshold) {
     console.log(`  ${pc.bgRed(pc.white(pc.bold(' COMMIT BLOCKED / SCAN FAILED ')))} ${pc.red('Sensitive findings must be resolved.')}\n`);
-    console.log(`  ${pc.bold(pc.yellow('⚡ Safe Remediation Steps:'))}`);
-    console.log(`    1. Replace hardcoded secrets with environment variables (e.g. process.env.API_KEY)`);
-    console.log(`    2. Provide template placeholder in .env.example (e.g. API_KEY="your-key-here")`);
+    console.log(`  ${pc.bold(pc.yellow('⚡ Safe Next Steps:'))}`);
+    console.log(`    1. Run ${pc.cyan('npx agent-leak fix')} for interactive step-by-step guidance`);
+    console.log(`    2. Move secrets to environment variables (e.g. process.env.API_KEY)`);
     console.log(`    3. If .env or key file was created, ensure it is added to .gitignore`);
-    console.log(`    4. Re-run verification: ${pc.cyan('npx agent-leak diff --staged-only')}`);
+    console.log(`    4. Re-run verification: ${pc.cyan('npx agent-leak verify')}`);
     console.log(`    5. Emergency bypass (use with caution): ${pc.dim('AGENT_LEAK_ALLOW=1 git commit')}\n`);
   }
 }

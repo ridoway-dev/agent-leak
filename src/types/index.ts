@@ -37,6 +37,7 @@ export interface Finding {
   whyItMatters?: string;
   fixGuide?: string;
   agentInstruction?: string;
+  rotationUrl?: string;
 }
 
 export interface GitIgnoreAnalysis {
@@ -87,4 +88,5 @@ export interface ScanOptions {
   configPath?: string;
   stagedOnly?: boolean;
   maxHistoryCommits?: number;
+  nonInteractive?: boolean;
 }

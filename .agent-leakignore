@@ -1,5 +1,7 @@
 # Demo fixtures with fake keys
 demo/**
 tests/fixtures/**
+docs/**
 dist/**
 coverage/**
+
