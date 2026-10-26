@@ -1,0 +1,53 @@
+{
+  "name": "agent-leak",
+  "version": "0.1.0",
+  "description": "Security scanner for AI-assisted coding. Find what your AI coding agent could accidentally leak before it leaves your machine.",
+  "keywords": [
+    "security",
+    "secret-scanner",
+    "ai-agent",
+    "claude-code",
+    "cursor",
+    "codex",
+    "credentials",
+    "pre-commit",
+    "developer-tools"
+  ],
+  "author": "Agent Leak Contributors",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "agent-leak": "./bin/agent-leak.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "skill",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

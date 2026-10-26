@@ -1,0 +1,11 @@
+{
+  "failOn": "HIGH",
+  "ignore": [
+    "demo/**",
+    "tests/fixtures/**",
+    "dist/**",
+    "coverage/**"
+  ],
+  "scanHistory": false,
+  "scanImages": false
+}
